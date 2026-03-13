@@ -1,0 +1,32 @@
+data_ingestion:
+  source_path: "ML Models/datasetforproject.csv"
+  raw_data_dir: "artifacts/data/raw"
+  raw_file_name: "heart_disease_raw.csv"
+
+data_preprocessing:
+  processed_data_dir: "artifacts/data/processed"
+  processed_file_name: "preprocessed_dataset.csv"
+  # Outlier removal bounds (from notebook analysis)
+  height_min_cm: 148
+  height_max_cm: 200
+  ap_hi_min: 50
+  ap_hi_max: 400
+  ap_lo_min: 50
+  ap_lo_max: 350
+
+training:
+  test_size: 0.2
+  stratify: true
+  kfold_splits: 5
+  random_state: 42
+
+model_registry:
+  registry_dir: "artifacts/models/registry"
+
+evaluation:
+  sensitivity_weight: 0.25
+  report_dir: "artifacts/reports"
+
+mlflow:
+  experiment_name: "HeartDiseasePrediction"
+  tracking_uri: "mlruns"
