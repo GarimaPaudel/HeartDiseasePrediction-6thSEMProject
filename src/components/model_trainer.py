@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 from box import ConfigBox
-from sklearn.decision_tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
