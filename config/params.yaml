@@ -1,0 +1,24 @@
+# Active model to train. Options: RandomForest, LogisticRegression, DecisionTree, KNN
+active_model: "DecisionTree"
+
+cv_folds: 5
+
+RandomForest:
+  n_estimators: [100, 200, 300]
+  max_depth: [5, 10, 20]
+
+KNN:
+  n_neighbors: [3, 5, 7, 9]
+  weights: ["uniform", "distance"]
+  p: [1, 2]
+
+LogisticRegression:
+  C: [0.001, 0.01, 0.1, 1, 10]
+  penalty: ["l2"]
+  solver: ["liblinear", "lbfgs"]
+  max_iter: [1000]
+
+DecisionTree:
+  max_depth: [5, 10, 20]
+  min_samples_split: [2, 5, 10]
+  min_samples_leaf: [1, 2, 4]
