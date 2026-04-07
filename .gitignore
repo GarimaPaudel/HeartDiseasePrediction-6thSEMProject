@@ -32,3 +32,4 @@ env/
 
 # OS
 .DS_Store
+uv.lock

@@ -1,123 +1,112 @@
-import numpy as np
+import os
+from contextlib import asynccontextmanager
+
 import pandas as pd
-from flask import Flask, request, render_template
-import pickle
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
- 
-
- 
-
-app = Flask(__name__)
-model = pickle.load(open('model_rand.pkl', 'rb'))
-
- 
-
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    return render_template('index.html')
-
- 
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    return render_template('predict.html')
-
- 
-
-@app.route('/about', methods=['POST'])
-def about():
-    return render_template('about.html')
-
- 
-
-@app.route('/heart', methods=['POST'])
-def disease():
-    return render_template('disease.html')
-
- 
-
- 
-
-@app.route('/result', methods = ['POST'])
-def result():
-    # Extract form values
-
-    age = float(request.form['age'])
-    male = 1 if request.form['gender'] == 'male' else 0
-    height = float(request.form['height'])
-    weight = float(request.form['weight'])
-    ap_hi = int(request.form['systolic_bp'])
-    ap_lo = int(request.form['diastolic_bp'])
-
-    if(request.form['chol']== 'normal'):
-        cholesterol = 1
-    elif(request.form['chol']== 'medium'):
-        cholesterol = 2
-    elif(request.form['chol'] == 'high'):
-        cholesterol = 3
-
-    if(request.form['gluc']== 'normal'):
-        gluc = 1
-    elif(request.form['gluc']== 'medium'):
-        gluc = 2
-    elif(request.form['gluc'] == 'high'):
-        gluc = 3
+from src.components.feature_engineering import FeatureEngineer
+from src.components.model_registry import ModelRegistry
+from src.utils.common import read_yaml
 
 
 
-    '''   cholesterol = int(request.form['cholesterol'])
-
-    gluc = int(request.form['glucose'])
-
-    '''
-    smoke = 1 if request.form['smoke'] == 'yes' else 0
-    alco = 1 if request.form['alcohol'] == 'yes' else 0
-    active = 1 if request.form['exercise'] == 'yes' else 0
-
-    bmi = weight / (height*height)
-    if (bmi > 0 and bmi <= 15):
-        bmi_class = 0
-    elif(bmi>15 and bmi <= 18.5):
-        bmi_class = 1
-    elif(bmi >18.5 and bmi <= 25):
-        bmi_class = 2
-    elif(bmi > 25 and bmi <=30):
-        bmi_class = 3
-    elif(bmi > 30 and bmi <=35):
-        bmi_class = 4
-    elif(bmi > 35 and bmi <=40 ):
-        bmi_class = 5
-    elif(bmi > 40):
-        bmi_class = 6
+_state: dict = {}
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    config_path = os.environ.get("CONFIG_PATH", "config/config.yaml")
+    config = read_yaml(config_path)
+    registry = ModelRegistry(config.model_registry)
+    try:
+        _state["model"] = registry.load_production_model()
+        _state["fe"] = FeatureEngineer()
+    except FileNotFoundError as exc:
+        # App starts but /predict will return 503 until a model is registered
+        _state["model"] = None
+        _state["fe"] = FeatureEngineer()
+        _state["startup_error"] = str(exc)
+    yield
+    _state.clear()
 
- 
 
-    # Create a feature vector (input for the model)
-    features = [age, male, height, weight, ap_hi, ap_lo, cholesterol, gluc, smoke, alco, active, bmi, bmi_class]
+app = FastAPI(
+    title="Heart Disease Prediction API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
- 
 
-    # Create a DataFrame with appropriate column names
-    df = pd.DataFrame([features], columns=["age", "male", "height", "weight", "ap_hi", "ap_lo", "cholesterol", "gluc", "smoke", "alco", "active", "bmi", "bmi_class"])
+class PredictRequest(BaseModel):
+    age: float = Field(..., gt=0, description="Age in years")
+    gender: str = Field(..., pattern="^(male|female)$")
+    height: float = Field(..., gt=0, description="Height in cm")
+    weight: float = Field(..., gt=0, description="Weight in kg")
+    systolic_bp: int = Field(..., alias="ap_hi", gt=0)
+    diastolic_bp: int = Field(..., alias="ap_lo", gt=0)
+    cholesterol: int = Field(..., ge=1, le=3, description="1=normal, 2=medium, 3=high")
+    gluc: int = Field(..., ge=1, le=3, description="1=normal, 2=medium, 3=high")
+    smoke: bool
+    alco: bool
+    active: bool
 
- 
+    model_config = {"populate_by_name": True}
 
-    # Perform prediction using the model
-    prediction = model.predict(df)
-    result = "Presence of Heart Disease" if prediction == 1 else "Absence of Heart Disease"
 
- 
+class PredictResponse(BaseModel):
+    prediction: int = Field(..., description="0 = no disease, 1 = disease")
+    label: str
 
-    return render_template('predict.html', prediction=result)
 
- 
+class HealthResponse(BaseModel):
+    status: str
+    model_loaded: bool
+
+
+# Endpoints
+
+@app.get("/health", response_model=HealthResponse, tags=["ops"])
+def health():
+    return HealthResponse(
+        status="ok",
+        model_loaded=_state.get("model") is not None,
+    )
+
+
+@app.post("/predict", response_model=PredictResponse, tags=["prediction"])
+def predict(body: PredictRequest):
+    model = _state.get("model")
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail=_state.get("startup_error", "Model not loaded."),
+        )
+
+    fe: FeatureEngineer = _state["fe"]
+    bmi = fe.compute_bmi(body.weight, body.height)
+    bmi_class = fe.compute_bmi_class(bmi)
+    male = 1 if body.gender == "male" else 0
+
+    features = [
+        body.age, male, body.height, body.weight,
+        body.systolic_bp, body.diastolic_bp,
+        body.cholesterol, body.gluc,
+        int(body.smoke), int(body.alco), int(body.active),
+        bmi, bmi_class,
+    ]
+    df = pd.DataFrame(
+        [features],
+        columns=["age", "male", "height", "weight", "ap_hi", "ap_lo",
+                 "cholesterol", "gluc", "smoke", "alco", "active", "bmi", "bmi_class"],
+    )
+
+    prediction = int(model.predict(df)[0])
+    label = "Presence of Heart Disease" if prediction == 1 else "Absence of Heart Disease"
+    return PredictResponse(prediction=prediction, label=label)
+
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
