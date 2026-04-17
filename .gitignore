@@ -2,10 +2,10 @@
 mlruns/
 
 # Pipeline artifacts (data, models, logs) — keep .gitkeep placeholders
-artifacts/data/
-artifacts/models/
-artifacts/logs/
-!artifacts/**/.gitkeep
+artifacts/data/processed/*.csv
+artifacts/data/raw/*.csv
+artifacts/models/registry
+artifacts/logs/*.log
 
 # Python
 __pycache__/

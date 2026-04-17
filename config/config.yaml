@@ -1,5 +1,5 @@
 data_ingestion:
-  source_path: "ML Models/datasetforproject.csv"
+  source_path: "artifacts/data/raw/heart_disease_raw.csv"
   raw_data_dir: "artifacts/data/raw"
   raw_file_name: "heart_disease_raw.csv"
 

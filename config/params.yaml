@@ -1,5 +1,5 @@
 # Active model to train. Options: RandomForest, LogisticRegression, DecisionTree, KNN
-active_model: "DecisionTree"
+active_model: "KNN"
 
 cv_folds: 5
 

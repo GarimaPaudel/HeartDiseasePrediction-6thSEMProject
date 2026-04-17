@@ -1,42 +1,48 @@
 {
-    "accuracy": 0.732645,
-    "sensitivity": 0.636119,
-    "specificity": 0.826988,
-    "objective_value": 0.891675,
+    "model": "RandomForest",
+    "params": {
+        "max_depth": 10,
+        "n_estimators": 100
+    },
+    "timestamp": "2026-04-17T09:55:45.558922+00:00",
+    "accuracy": 0.735965,
+    "sensitivity": 0.677612,
+    "specificity": 0.792998,
+    "objective_value": 0.905368,
     "confusion_matrix": [
         [
-            5669,
-            1186
+            5436,
+            1419
         ],
         [
-            2438,
-            4262
+            2160,
+            4540
         ]
     ],
     "classification_report": {
         "0": {
-            "precision": 0.6992722338719625,
-            "recall": 0.8269876002917579,
-            "f1-score": 0.757786392193557,
+            "precision": 0.7156398104265402,
+            "recall": 0.7929978118161926,
+            "f1-score": 0.7523354785135977,
             "support": 6855.0
         },
         "1": {
-            "precision": 0.7823054331864905,
-            "recall": 0.6361194029850746,
-            "f1-score": 0.7016792887718143,
+            "precision": 0.7618727974492364,
+            "recall": 0.6776119402985075,
+            "f1-score": 0.7172762461489849,
             "support": 6700.0
         },
-        "accuracy": 0.732644780523792,
+        "accuracy": 0.7359645887126521,
         "macro avg": {
-            "precision": 0.7407888335292265,
-            "recall": 0.7315535016384163,
-            "f1-score": 0.7297328404826857,
+            "precision": 0.7387563039378884,
+            "recall": 0.73530487605735,
+            "f1-score": 0.7348058623312913,
             "support": 13555.0
         },
         "weighted avg": {
-            "precision": 0.740314095576672,
-            "recall": 0.732644780523792,
-            "f1-score": 0.7300536298973065,
+            "precision": 0.7384919692647597,
+            "recall": 0.7359645887126521,
+            "f1-score": 0.7350063116494955,
             "support": 13555.0
         }
     }

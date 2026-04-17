@@ -15,7 +15,9 @@ class DataIngestion:
         create_directories([self.config.raw_data_dir])
 
         dest = Path(self.config.raw_data_dir) / self.config.raw_file_name
-        shutil.copy(self.config.source_path, dest)
+        src = Path(self.config.source_path)
+        if src.resolve() != dest.resolve():
+            shutil.copy(src, dest)
 
         df = pd.read_csv(dest)
         logger.info(

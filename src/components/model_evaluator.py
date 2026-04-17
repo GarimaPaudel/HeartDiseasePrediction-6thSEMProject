@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import numpy as np
 from box import ConfigBox
 from sklearn.metrics import (
@@ -13,7 +15,8 @@ class ModelEvaluator:
     def __init__(self, config: ConfigBox):
         self.sensitivity_weight = config.sensitivity_weight
 
-    def evaluate(self, model, X_test: np.ndarray, y_test: np.ndarray) -> dict:
+    def evaluate(self, model, X_test: np.ndarray, y_test: np.ndarray,
+                 model_name: str = None, best_params: dict = None) -> dict:
         y_pred = model.predict(X_test)
 
         cm = confusion_matrix(y_test, y_pred)
@@ -27,6 +30,9 @@ class ModelEvaluator:
         report = classification_report(y_test, y_pred, output_dict=True)
 
         metrics = {
+            "model": model_name or type(model).__name__,
+            "params": best_params or {},
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "accuracy": round(float(accuracy), 6),
             "sensitivity": round(float(sensitivity), 6),
             "specificity": round(float(specificity), 6),

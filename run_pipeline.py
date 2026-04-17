@@ -58,10 +58,10 @@ def run_all():
 
         # Stage 5 — Evaluate
         logger.info(">>>>>> Stage 5: Evaluation <<<<<<")
-        metrics = evaluate(model, X_test, y_test)
+        params = read_yaml("config/params.yaml")
+        metrics = evaluate(model, X_test, y_test, model_name=params.active_model, best_params=best_params)
 
         # Log to MLflow
-        params = read_yaml("config/params.yaml")
         clean_params = {k.replace("clf__", ""): v for k, v in best_params.items()}
         mlflow.log_params({"model": params.active_model, **clean_params})
         mlflow.log_metrics({
